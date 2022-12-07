@@ -10,10 +10,10 @@ data class File(val name: String, val content: MutableMap<String, File>, var siz
     }
 
     fun print(prefix: String) {
-        if (content.isEmpty()) println( "${prefix}${size} ${name}")
+        if (content.isEmpty()) println( "${prefix}${size} $name")
         else {
             println("${prefix}${name}:")
-            content.forEach{k,v->v.print(prefix+" ")}
+            content.forEach{ (_, v) ->v.print("$prefix ")}
         }
     }
 }
@@ -31,23 +31,23 @@ private fun parseFileSystem(input: List<String>): File {
     var curDir = root
     var curDirTemp = curDir
     for (line in input) if (line.isNotEmpty()) {
-        var words = line.split(" ")
+        val words = line.split(" ")
         if (words[0] == "$") {
             val newDir = if (words.size > 2) words[2] else ""
             when (words[1]) {
                 "cd" -> when (newDir) {
                     "/" -> curDir = root
                     ".." -> curDir = curDir.parent ?: root
-                    "." -> curDir = curDir
+                    "." -> {}//curDir = curDir
                     else -> {
-                        if (!(newDir in curDir.content))
+                        if (newDir !in curDir.content)
                             curDir.content[newDir] = File(newDir, mutableMapOf(), 0, curDir)
                         curDir = curDir.content[newDir]!!
                     }
                 }
 
                 "ls" -> if (words.size > 2) {
-                    if (!(newDir in curDir.content))
+                    if (newDir !in curDir.content)
                         curDir.content[newDir] = File(newDir, mutableMapOf(), 0, curDir)
                     curDirTemp = curDir.content[newDir]!!
                 } else
@@ -57,7 +57,7 @@ private fun parseFileSystem(input: List<String>): File {
             // this is a file
             val name = words[1]
             if (words[0] == "dir") {
-                if (!(name in curDir.content))
+                if (name !in curDir.content)
                     curDirTemp.content[name] = File(name, mutableMapOf(), 0, curDirTemp)
             } else {
                 curDirTemp.content[name] = File(name, mutableMapOf(), words[0].toInt(), curDirTemp)
@@ -69,8 +69,8 @@ private fun parseFileSystem(input: List<String>): File {
 
 var globalSum = 0
 fun sizeLess100000(root: File): Int {
-    var sum = root.size + root.content.map { (k,v)-> sizeLess100000(v) }.sum()
-    if (sum<100000 && ! root.content.isEmpty()) {
+    val sum = root.size + root.content.map { (_,v)-> sizeLess100000(v) }.sum()
+    if ((sum < 100000) && root.content.isNotEmpty()) {
         globalSum += sum
         //print("+")
     }
@@ -88,14 +88,14 @@ fun part2(input: List<String>): Int {
 
 fun smallestMoreThan(requireSize: Int, curMin: Int, root: File): Int {
     var min = curMin
-    root.content.forEach{(k,v)->
+    root.content.forEach{(_,v)->
         val size = smallestMoreThan(requireSize, min, v)
-        if (size>requireSize && size < min)
+        if (size in (requireSize + 1) until min)
             min = size
     }
-    if (! root.content.isEmpty()) {
+    if (root.content.isNotEmpty()) {
         val size = sizeLess100000(root)
-        if (size > requireSize && size < min)
+        if (size in (requireSize + 1) until min)
             min = size
     }
     return min
